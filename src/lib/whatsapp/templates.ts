@@ -13,3 +13,26 @@ export const DEFAULT_FOLLOW_UP =
 
 export const OPT_OUT_CONFIRMATION =
   'Combinado! Não vou mais mandar mensagens. Desculpe o incômodo e boas vendas! 🙏';
+
+export interface TemplateVars {
+  empresa?: string;
+  link?: string;
+  agencia?: string;
+  cidade?: string;
+  ramo?: string;
+}
+
+/** Troca {empresa}, {link}, {agencia}, {cidade} e {ramo}; outras chaves ficam como estão. */
+export function renderTemplate(template: string, vars: TemplateVars): string {
+  return template
+    .replace(/\{(empresa|link|agencia|cidade|ramo)\}/g, (match, key: keyof TemplateVars) => vars[key] ?? match)
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+/** Sorteia uma variação não vazia do modelo. */
+export function pickTemplate(templates: string[], random: () => number = Math.random): string {
+  const options = templates.map((t) => t.trim()).filter(Boolean);
+  const list = options.length ? options : DEFAULT_FIRST_TEMPLATES;
+  return list[Math.min(Math.floor(random() * list.length), list.length - 1)];
+}

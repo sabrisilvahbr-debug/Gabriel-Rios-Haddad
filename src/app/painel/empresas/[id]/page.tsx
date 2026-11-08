@@ -8,6 +8,7 @@ import { BUSINESS_STATUS_LABELS, BUSINESS_STATUSES } from '@/lib/constants';
 import { appUrl } from '@/lib/env';
 import { waNumber } from '@/lib/phone';
 import { deleteAction, notesAction, statusAction } from './actions';
+import { Conversation } from './Conversation';
 import { DomainPanel } from './DomainPanel';
 import { SitePhotosEditor, SiteTextsEditor } from './SiteEditor';
 
@@ -18,7 +19,7 @@ export default async function BusinessPage({ params }: Props) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const detail = await getBusinessDetail(id);
   if (!detail) notFound();
-  const { business, site } = detail;
+  const { business, site, messages } = detail;
   const previewUrl = site ? `${appUrl()}/s/${site.slug}` : null;
   const businessId = <input type="hidden" name="businessId" value={business.id} />;
 
@@ -59,6 +60,7 @@ export default async function BusinessPage({ params }: Props) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-6">
+          <Conversation business={business} messages={messages} />
           {site ? (
             <>
               <SiteTextsEditor site={site} businessId={business.id} />

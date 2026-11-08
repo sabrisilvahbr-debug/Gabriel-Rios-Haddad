@@ -5,12 +5,13 @@ import { redirect } from 'next/navigation';
 import { fail, ok, type ActionResult } from '@/lib/action-result';
 import { errorMessage } from '@/lib/async';
 import { requireSession } from '@/lib/auth/session';
-import { deleteBusiness, updateBusinessStatus, updateNotes } from '@/lib/businesses';
+import { deleteBusiness, setAiPaused, updateBusinessStatus, updateNotes } from '@/lib/businesses';
 import type { BusinessStatus, Niche } from '@/lib/constants';
 import { parseContentForm } from '@/lib/sites/content-form';
 import { addUploadedPhoto, removePhoto, setPhotoAuthorized } from '@/lib/sites/photos';
 import { checkDomain, connectDomain, disconnectDomain, publishSite, unpublishSite } from '@/lib/sites/publish';
 import { regenerateSiteContent, updateSiteContent } from '@/lib/sites/service';
+import { cancelQueued, enqueueFirstContact, sendManualMessage } from '@/lib/whatsapp/outreach';
 
 const str = (data: FormData, name: string) => String(data.get(name) ?? '');
 
@@ -126,4 +127,33 @@ export async function disconnectDomainAction(_state: ActionResult, data: FormDat
   const result = await disconnectDomain(str(data, 'siteId'));
   refresh(data);
   return result;
+}
+
+export async function enqueueOneAction(_state: ActionResult, data: FormData): Promise<ActionResult> {
+  await requireSession();
+  const result = await enqueueFirstContact(str(data, 'businessId'));
+  refresh(data);
+  return result;
+}
+
+export async function cancelQueueOneAction(_state: ActionResult, data: FormData): Promise<ActionResult> {
+  await requireSession();
+  await cancelQueued(str(data, 'businessId'));
+  refresh(data);
+  return ok('Envio cancelado.');
+}
+
+export async function sendManualAction(_state: ActionResult, data: FormData): Promise<ActionResult> {
+  await requireSession();
+  const result = await sendManualMessage(str(data, 'businessId'), str(data, 'text'));
+  refresh(data);
+  return result;
+}
+
+export async function toggleAiAction(_state: ActionResult, data: FormData): Promise<ActionResult> {
+  await requireSession();
+  const paused = str(data, 'paused') === 'true';
+  await setAiPaused(str(data, 'businessId'), paused);
+  refresh(data);
+  return ok(paused ? 'IA pausada nesta conversa.' : 'IA retomada nesta conversa.');
 }

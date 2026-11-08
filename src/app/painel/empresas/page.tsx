@@ -3,6 +3,7 @@ import { EmptyState, inputClass, PageHeader, StatusBadge, buttonClass } from '@/
 import { listBusinesses } from '@/lib/businesses';
 import { BUSINESS_STATUS_LABELS, BUSINESS_STATUSES } from '@/lib/constants';
 import { countByStatus } from '@/lib/panel/stats';
+import { EnqueueReadyForm } from './EnqueueReadyForm';
 
 type Props = { searchParams: Promise<{ status?: string; q?: string }> };
 
@@ -21,7 +22,9 @@ export default async function BusinessesPage({ searchParams }: Props) {
 
   return (
     <>
-      <PageHeader title="Empresas" description="Empresas encontradas nas buscas, com a prévia de site de cada uma." />
+      <PageHeader title="Empresas" description="Empresas encontradas nas buscas, com a prévia de site de cada uma.">
+        <EnqueueReadyForm ready={counts.previa_pronta} />
+      </PageHeader>
 
       <div className="mb-4 flex flex-wrap items-center gap-2" role="navigation" aria-label="Filtrar por etapa">
         <Link
