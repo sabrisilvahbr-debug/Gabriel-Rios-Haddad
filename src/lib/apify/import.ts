@@ -1,9 +1,9 @@
-import { and, desc, eq, ne } from 'drizzle-orm';
+import { and, desc, eq, isNull, ne, sql } from 'drizzle-orm';
 import { errorMessage, mapWithConcurrency } from '@/lib/async';
 import { isBlocked } from '@/lib/blocklist';
 import { MAX_RESULTS_LIMIT } from '@/lib/constants';
 import { getDb } from '@/lib/db/client';
-import { businesses, searches, type Search } from '@/lib/db/schema';
+import { businesses, searches, sites, type Search } from '@/lib/db/schema';
 import { getSettings } from '@/lib/db/settings';
 import { appUrl, env } from '@/lib/env';
 import { logEvent } from '@/lib/events';
@@ -71,17 +71,19 @@ export async function importSearchResults(
   const items = await getDatasetItems(datasetId);
   const settings = await getSettings();
   const db = getDb();
-  const newIds: string[] = [];
-  let skipped = 0;
 
   for (const item of items) {
     const mapped = mapPlace(item, { includeLandlines: settings.includeLandlines });
-    if (!mapped.ok || (await isBlocked(mapped.place.phone.e164))) {
-      skipped++;
-      continue;
-    }
+    if (!mapped.ok || (await isBlocked(mapped.place.phone.e164))) continue;
     const p = mapped.place;
-    const [row] = await db
+    // O Google às vezes lista o mesmo dono duas vezes: um telefone, uma empresa (e uma mensagem só).
+    const [samePhone] = await db
+      .select({ id: businesses.id })
+      .from(businesses)
+      .where(eq(businesses.phoneE164, p.phone.e164))
+      .limit(1);
+    if (samePhone) continue;
+    await db
       .insert(businesses)
       .values({
         searchId,
@@ -103,13 +105,16 @@ export async function importSearchResults(
         imageUrls: p.imageUrls,
         description: p.description,
       })
-      .onConflictDoNothing({ target: businesses.placeId })
-      .returning({ id: businesses.id });
-    if (row) newIds.push(row.id);
-    else skipped++;
+      .onConflictDoNothing({ target: businesses.placeId });
   }
 
-  await mapWithConcurrency(newIds, 3, async (id) => {
+  // Cria as prévias que faltam nesta busca, inclusive as de uma importação interrompida.
+  const withoutSite = await db
+    .select({ id: businesses.id })
+    .from(businesses)
+    .leftJoin(sites, eq(sites.businessId, businesses.id))
+    .where(and(eq(businesses.searchId, searchId), isNull(sites.id)));
+  await mapWithConcurrency(withoutSite.map((b) => b.id), 3, async (id) => {
     try {
       await createSiteForBusiness(id);
     } catch (error) {
@@ -117,7 +122,11 @@ export async function importSearchResults(
     }
   });
 
-  const imported = newIds.length;
+  const [{ imported }] = await db
+    .select({ imported: sql<number>`count(*)::int` })
+    .from(businesses)
+    .where(eq(businesses.searchId, searchId));
+  const skipped = Math.max(items.length - imported, 0);
   await db
     .update(searches)
     .set({

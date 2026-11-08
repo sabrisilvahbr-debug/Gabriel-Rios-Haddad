@@ -111,6 +111,33 @@ describe('importSearchResults', () => {
     expect(result.imported).toBe(0);
     expect(await db.select().from(businesses)).toHaveLength(3);
   });
+
+  it('finishes previews left behind by an interrupted import', async () => {
+    const search = await seedSearch();
+    await importSearchResults(search.id);
+    const [victim] = await db.select().from(businesses).limit(1);
+    await db.delete(sites).where(eq(sites.businessId, victim.id));
+    await db.update(businesses).set({ status: 'nova' }).where(eq(businesses.id, victim.id));
+    await db.update(searches).set({ status: 'succeeded' }).where(eq(searches.id, search.id));
+
+    const result = await importSearchResults(search.id);
+    expect(await db.select().from(sites).where(eq(sites.businessId, victim.id))).toHaveLength(1);
+    expect((await db.select().from(businesses).where(eq(businesses.id, victim.id)))[0].status).toBe('previa_pronta');
+    expect(result.imported).toBe(3);
+    expect((await db.select().from(searches).where(eq(searches.id, search.id)))[0].status).toBe('imported');
+  });
+
+  it('keeps one business per phone when Google lists the same number twice', async () => {
+    const twin = { ...items[0], placeId: 'p1-bis', title: 'Barbearia do Zé - Unidade 2' };
+    fetchMock.mockImplementation(async (url: string) =>
+      url.includes('/datasets/ds1/items') ? json([...items, twin]) : json({ error: 'not mocked' }, 404),
+    );
+    const search = await seedSearch();
+    const result = await importSearchResults(search.id);
+    expect(result.imported).toBe(3);
+    const rows = await db.select().from(businesses).where(eq(businesses.phoneE164, '+5519987654321'));
+    expect(rows).toHaveLength(1);
+  });
 });
 
 describe('refreshSearch and webhooks', () => {

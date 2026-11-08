@@ -12,6 +12,7 @@ import { enqueueAllReady, enqueueFirstContact, runOutreachStep, scheduleFollowUp
 let db: DB;
 let sends: Array<{ number: string; text: string }>;
 let exists: boolean;
+let sendFails: boolean;
 
 const MONDAY_10H = new Date('2026-11-09T13:00:00Z'); // segunda, 10:00 em Brasília
 const SUNDAY_10H = new Date('2026-11-08T13:00:00Z');
@@ -24,6 +25,7 @@ beforeEach(async () => {
   db = await createTestDb();
   sends = [];
   exists = true;
+  sendFails = false;
   vi.stubEnv('APP_URL', 'https://zap.vercel.app');
   vi.stubEnv('EVOLUTION_API_URL', 'https://evo.example/');
   vi.stubEnv('EVOLUTION_API_KEY', 'evo-key');
@@ -40,6 +42,7 @@ beforeEach(async () => {
         return json([{ exists, jid: `${body.numbers[0]}@s.whatsapp.net`, number: body.numbers[0] }]);
       }
       if (url === 'https://evo.example/message/sendText/zapflow') {
+        if (sendFails) return json({ error: 'Connection Closed' }, 500);
         sends.push({ number: body.number, text: body.text });
         return json({ key: { remoteJid: `${body.number}@s.whatsapp.net`, fromMe: true, id: `WAID${sends.length}` } });
       }
@@ -79,6 +82,16 @@ describe('enqueue', () => {
     expect((await enqueueFirstContact(landline.id)).message).toMatch(/fixo/);
     const { business: optedOut } = await seedBusiness(db, { status: 'nao_contatar' });
     expect((await enqueueFirstContact(optedOut.id)).ok).toBe(false);
+  });
+
+  it('never queues a first message to a phone another business already uses', async () => {
+    const { business } = await seedBusiness(db);
+    const { business: twin } = await seedBusiness(db, { phoneE164: business.phoneE164 });
+    expect((await enqueueFirstContact(business.id)).ok).toBe(true);
+    const refused = await enqueueFirstContact(twin.id);
+    expect(refused.ok).toBe(false);
+    expect(refused.message).toContain(business.name);
+    expect(await messagesOf(twin.id)).toHaveLength(0);
   });
 
   it('enqueueAllReady queues every ready preview', async () => {
@@ -151,6 +164,17 @@ describe('runOutreachStep', () => {
     expect((await businessById(business.id)).status).toBe('sem_whatsapp');
     const [message] = await messagesOf(business.id);
     expect(message.status).toBe('cancelada');
+  });
+
+  it('puts the business back in Prévia pronta when the send fails, so it can be queued again', async () => {
+    sendFails = true;
+    const { business } = await seedBusiness(db);
+    await enqueueFirstContact(business.id);
+    expect((await runOutreachStep(MONDAY_10H)).result).toBe('error');
+    const [message] = await messagesOf(business.id);
+    expect(message.status).toBe('erro');
+    expect((await businessById(business.id)).status).toBe('previa_pronta');
+    expect(await enqueueAllReady()).toBe(1);
   });
 });
 

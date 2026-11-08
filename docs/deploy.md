@@ -126,7 +126,7 @@ Em **Settings → Deployment Protection**, deixe a opção padrão (**Standard P
    - Revise os modelos de **Primeira mensagem**. Todos precisam ter `{link}`.
    - Clique em **Salvar configurações**. No fim da página, a lista **Integrações** deve estar toda verde. Se algo estiver vermelho, ela mostra qual variável falta.
 3. Vá em **WhatsApp** e clique em **Conectar WhatsApp**. No celular do número de prospecção, abra o WhatsApp → **Configurações → Aparelhos conectados → Conectar um aparelho** e leia o QR code.
-4. Vá em **Buscas**, preencha **Ramo**, **Cidade** e **Quantidade** e clique em **Buscar empresas**. A busca leva alguns minutos e passa por "Buscando", "Importando" e "Concluída". Se ficar parada em "Buscando" por mais de 15 minutos, clique em **Atualizar**.
+4. Vá em **Buscas**, preencha **Ramo**, **Cidade** e **Quantidade** e clique em **Buscar empresas**. A busca leva alguns minutos e passa por "Buscando", "Importando" e "Concluída". Se ficar parada em "Buscando" ou "Importando" por mais de 15 minutos, clique em **Atualizar**.
 5. Vá em **Empresas**. Abra algumas, confira a prévia em **Abrir prévia** e ajuste os textos se quiser. Depois clique em **Colocar na fila as prévias prontas**.
 6. Volte em **Configurações**, marque **Envio automático ligado** e **Respostas da IA ligadas** e salve.
 
@@ -146,7 +146,7 @@ A partir daí, o app manda uma mensagem por vez, dentro dos dias e horários esc
 
 **O painel mostra erro logo ao abrir.** Falta o banco (passo 3) ou alguma variável do passo 7. Depois de corrigir, faça o **Redeploy**.
 
-**A busca não sai de "Buscando".** O `APP_URL` provavelmente está errado, e a Apify não consegue avisar o app que terminou. Corrija, faça o Redeploy e clique em **Atualizar** na busca.
+**A busca não sai de "Buscando" ou "Importando".** Clique em **Atualizar** na busca: o app confere a Apify e termina as prévias que faltarem. Se acontecer em toda busca, o `APP_URL` provavelmente está errado e a Apify não consegue avisar o app que terminou; corrija e faça o Redeploy.
 
 **O QR code não aparece.** Confira o `EVOLUTION_API_URL` (com `https://` e sem barra no final) e o `EVOLUTION_API_KEY`. No Railway, veja se o serviço da Evolution API está ligado e olhe os logs dele.
 

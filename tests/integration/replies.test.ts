@@ -5,12 +5,15 @@ import { seedBusiness } from '../helpers/seed';
 import type { DB } from '@/lib/db/client';
 import { blockedPhones, businesses, messages, type Business } from '@/lib/db/schema';
 import { updateAppState, updateSettings } from '@/lib/db/settings';
+import { maxDuration } from '@/app/api/cron/tick/route';
+import { runTick } from '@/lib/cron/tick';
 import { runRepliesStep } from '@/lib/whatsapp/replies';
 
 let db: DB;
 let business: Business;
 let sends: Array<{ number: string; text: string }>;
 let geminiCalls: number;
+let holdFirstGemini: Promise<void> | null;
 let decision: { reply: string; intent: string; handoff: boolean } | 'erro';
 
 const LAST_IN = new Date('2026-11-09T13:01:00Z');
@@ -23,6 +26,7 @@ beforeEach(async () => {
   db = await createTestDb();
   sends = [];
   geminiCalls = 0;
+  holdFirstGemini = null;
   decision = { reply: 'Fica R$ 497 à vista. Posso colocar no ar?', intent: 'duvida', handoff: false };
   vi.stubEnv('APP_URL', 'https://zap.vercel.app');
   vi.stubEnv('GEMINI_API_KEY', 'chave');
@@ -34,6 +38,7 @@ beforeEach(async () => {
     vi.fn(async (url: string, init: RequestInit = {}) => {
       if (url.includes('generativelanguage.googleapis.com')) {
         geminiCalls++;
+        if (holdFirstGemini && geminiCalls === 1) await holdFirstGemini;
         if (decision === 'erro') return json({ error: 'quota' }, 429);
         return json({ candidates: [{ content: { parts: [{ text: JSON.stringify(decision) }] } }] });
       }
@@ -138,5 +143,22 @@ describe('runRepliesStep', () => {
     await db.update(businesses).set({ aiPaused: true }).where(eq(businesses.id, business.id));
     expect(await runRepliesStep(after(60))).toBe(0);
     expect(geminiCalls).toBe(0);
+  });
+});
+
+describe('runTick with a slow AI', () => {
+  it('keeps the next tick out while a slow one can still be running, so nobody gets the same reply twice', async () => {
+    let release!: () => void;
+    holdFirstGemini = new Promise<void>((resolve) => (release = resolve));
+    const start = new Date(LAST_IN.getTime() + 60_000);
+
+    const slow = runTick(start);
+    await vi.waitFor(() => expect(geminiCalls).toBe(1));
+    const next = await runTick(new Date(start.getTime() + (maxDuration - 1) * 1000));
+    release();
+    await slow;
+
+    expect(next.locked).toBe(true);
+    expect(sends).toHaveLength(1);
   });
 });

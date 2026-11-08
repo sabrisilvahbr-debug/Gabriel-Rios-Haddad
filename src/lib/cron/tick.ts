@@ -8,7 +8,9 @@ import { checkPendingDomains } from '@/lib/sites/publish';
 import { runOutreachStep, scheduleFollowUps, type StepResult } from '@/lib/whatsapp/outreach';
 import { runRepliesStep } from '@/lib/whatsapp/replies';
 
-const LOCK_MS = 55_000;
+// Maior que o maxDuration da rota /api/cron/tick (300 s): uma rodada lenta (IA demorando)
+// nunca se sobrepõe à do minuto seguinte. Rodadas normais soltam a trava ao terminar.
+const LOCK_MS = 310_000;
 const DOMAIN_CHECK_EVERY_MS = 10 * 60_000;
 
 export interface TickReport {

@@ -69,7 +69,10 @@ export default async function BusinessPage({ params }: Props) {
             </>
           ) : (
             <Section title="Site">
-              <p className="text-sm text-stone-600">A prévia ainda está sendo criada. Atualize a página em instantes.</p>
+              <p className="text-sm text-stone-600">
+                A prévia ainda está sendo criada. Atualize a página em instantes. Se continuar assim, abra Buscas e
+                clique em Atualizar na busca desta empresa.
+              </p>
             </Section>
           )}
         </div>

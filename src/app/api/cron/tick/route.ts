@@ -3,7 +3,8 @@ import { runTick } from '@/lib/cron/tick';
 import { optionalEnv } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// Respostas da IA podem demorar; a trava da rodada (LOCK_MS em lib/cron/tick.ts) dura mais que isso.
+export const maxDuration = 300;
 
 /** Chamado pela Vercel Cron a cada minuto, com Authorization: Bearer CRON_SECRET. */
 export async function GET(request: Request) {

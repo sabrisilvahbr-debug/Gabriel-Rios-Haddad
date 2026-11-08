@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, lte, ne, sql } from 'drizzle-orm';
 import { errorMessage } from '@/lib/async';
 import { isBlocked } from '@/lib/blocklist';
 import { BUSINESS_STATUS_LABELS } from '@/lib/constants';
@@ -59,6 +59,23 @@ export async function enqueueFirstContact(businessId: string): Promise<Result> {
     )
     .limit(1);
   if (existing) return { ok: false, message: 'Esta empresa já recebeu a primeira mensagem ou já está na fila.' };
+
+  const [samePhone] = await getDb()
+    .select({ name: businesses.name })
+    .from(messages)
+    .innerJoin(businesses, eq(messages.businessId, businesses.id))
+    .where(
+      and(
+        eq(businesses.phoneE164, business.phoneE164),
+        ne(businesses.id, businessId),
+        eq(messages.direction, 'out'),
+        inArray(messages.status, ['agendada', 'enviada']),
+      ),
+    )
+    .limit(1);
+  if (samePhone) {
+    return { ok: false, message: `Este telefone também é de ${samePhone.name}, que já recebeu ou vai receber mensagem.` };
+  }
 
   const vars = await templateVars(business, settings);
   if (!vars) return { ok: false, message: 'A prévia desta empresa ainda não está pronta.' };
@@ -182,7 +199,16 @@ export async function runOutreachStep(now: Date): Promise<StepResult> {
   } catch (error) {
     await db.update(messages).set({ status: 'erro', error: errorMessage(error) }).where(eq(messages.id, message.id));
     await updateAppState({ nextSendAfter: new Date(now.getTime() + ERROR_BACKOFF_MS) });
-    await logEvent('erro', `Falha ao enviar para ${business.name}: ${errorMessage(error)}`, business.id);
+    let detail = '';
+    if (message.kind === 'primeiro_contato') {
+      // Sem isso a empresa ficaria "Na fila" para sempre, sem mensagem agendada.
+      await db
+        .update(businesses)
+        .set({ status: 'previa_pronta', updatedAt: now })
+        .where(and(eq(businesses.id, business.id), eq(businesses.status, 'na_fila')));
+      detail = ' Ela voltou para "Prévia pronta"; coloque na fila de novo quando o WhatsApp estiver normal.';
+    }
+    await logEvent('erro', `Falha ao enviar para ${business.name} (${errorMessage(error)}).${detail}`, business.id);
     return { result: 'error', reason: errorMessage(error) };
   }
 }
