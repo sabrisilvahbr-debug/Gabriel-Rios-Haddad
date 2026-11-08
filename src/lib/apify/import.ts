@@ -1,4 +1,4 @@
-import { and, eq, ne } from 'drizzle-orm';
+import { and, desc, eq, ne } from 'drizzle-orm';
 import { errorMessage, mapWithConcurrency } from '@/lib/async';
 import { isBlocked } from '@/lib/blocklist';
 import { MAX_RESULTS_LIMIT } from '@/lib/constants';
@@ -12,6 +12,10 @@ import { getDatasetItems, getRun, startGoogleMapsRun } from './client';
 import { mapPlace } from './mapper';
 
 const FAILED_RUN_STATUSES = new Set(['FAILED', 'ABORTED', 'TIMED-OUT', 'TIMED_OUT']);
+
+export async function listSearches(limit = 30): Promise<Search[]> {
+  return getDb().select().from(searches).orderBy(desc(searches.createdAt)).limit(limit);
+}
 
 export async function getSearch(id: string): Promise<Search | null> {
   const [row] = await getDb().select().from(searches).where(eq(searches.id, id)).limit(1);

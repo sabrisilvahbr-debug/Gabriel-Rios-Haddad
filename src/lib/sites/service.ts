@@ -6,7 +6,8 @@ import { getSettings } from '@/lib/db/settings';
 import { hostWithoutPort } from '@/lib/routing';
 import { slugify } from '@/lib/text';
 import type { SitePhoto } from '@/lib/types';
-import type { SiteCopyInput } from './content';
+import { NICHES, type Niche } from '@/lib/constants';
+import { clampContent, type SiteCopyInput } from './content';
 
 export interface SitePageData {
   site: Site;
@@ -103,6 +104,24 @@ export async function regenerateSiteContent(siteId: string): Promise<Site> {
     .where(eq(sites.id, siteId))
     .returning();
   return updated;
+}
+
+/** Salva os textos editados no painel (ajustados aos limites) e o ramo/tema. */
+export async function updateSiteContent(
+  siteId: string,
+  raw: unknown,
+  niche: Niche,
+): Promise<{ ok: boolean; message: string }> {
+  const content = clampContent(raw);
+  if (!content) {
+    return {
+      ok: false,
+      message: 'Preencha título, subtítulo, texto sobre, botão, descrição para o Google, 3 serviços e 3 diferenciais.',
+    };
+  }
+  if (!(NICHES as readonly string[]).includes(niche)) return { ok: false, message: 'Ramo inválido.' };
+  await getDb().update(sites).set({ content, niche, updatedAt: new Date() }).where(eq(sites.id, siteId));
+  return { ok: true, message: 'Textos salvos.' };
 }
 
 async function pageData(site: Site): Promise<SitePageData | null> {
