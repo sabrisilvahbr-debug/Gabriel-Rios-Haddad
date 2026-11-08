@@ -276,7 +276,7 @@ export function SiteView({ data, mode, now = new Date() }: { data: SitePageData;
                       <tr key={h.day} className="border-b border-stone-200">
                         <th
                           scope="row"
-                          className={`py-2.5 pr-4 text-left font-normal capitalize ${isToday ? 'font-semibold text-[var(--pd)]' : 'text-stone-600'}`}
+                          className={`py-2.5 pr-4 text-left font-normal first-letter:uppercase ${isToday ? 'font-semibold text-[var(--pd)]' : 'text-stone-600'}`}
                         >
                           {h.day}
                           {isToday ? <span className="sr-only"> (hoje)</span> : null}
