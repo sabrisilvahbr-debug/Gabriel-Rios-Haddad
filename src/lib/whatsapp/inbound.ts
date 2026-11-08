@@ -65,7 +65,11 @@ async function sendSystemMessage(business: Business, body: string): Promise<void
 }
 
 /** A empresa pediu para sair: bloqueia o telefone, cancela a fila e confirma uma única vez. */
-export async function optOutBusiness(businessId: string, now: Date = new Date()): Promise<void> {
+export async function optOutBusiness(
+  businessId: string,
+  now: Date = new Date(),
+  options: { confirm?: boolean } = {},
+): Promise<void> {
   const [business] = await getDb().select().from(businesses).where(eq(businesses.id, businessId)).limit(1);
   if (!business) return;
   const alreadyOut = business.status === 'nao_contatar' && business.optedOutAt !== null;
@@ -81,7 +85,7 @@ export async function optOutBusiness(businessId: string, now: Date = new Date())
     .where(and(eq(messages.businessId, businessId), eq(messages.status, 'agendada')));
 
   if (alreadyOut) return;
-  await sendSystemMessage(business, OPT_OUT_CONFIRMATION);
+  if (options.confirm !== false) await sendSystemMessage(business, OPT_OUT_CONFIRMATION);
   await logEvent('saida', `${business.name} pediu para não receber mais mensagens.`, businessId);
 }
 
