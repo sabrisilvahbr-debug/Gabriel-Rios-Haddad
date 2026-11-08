@@ -233,23 +233,25 @@ export async function sendManualMessage(businessId: string, text: string): Promi
   if (state.waConnectionState !== 'open') return { ok: false, message: 'Conecte o WhatsApp antes de enviar.' };
 
   const now = new Date();
+  // Grava antes de enviar: o eco do webhook pode chegar antes da resposta da Evolution.
+  const [row] = await getDb()
+    .insert(messages)
+    .values({ businessId, direction: 'out', kind: 'manual', body, status: 'agendada' })
+    .returning({ id: messages.id });
+  await getDb()
+    .update(businesses)
+    .set({ aiPaused: true, updatedAt: now })
+    .where(eq(businesses.id, businessId));
   try {
     const sent = await sendText(business.waJid?.split('@')[0] ?? waNumber(business.phoneE164), body);
-    await getDb().insert(messages).values({
-      businessId,
-      direction: 'out',
-      kind: 'manual',
-      body,
-      waMessageId: sent.id,
-      status: 'enviada',
-      sentAt: now,
-    });
     await getDb()
-      .update(businesses)
-      .set({ aiPaused: true, lastOutboundAt: now, updatedAt: now })
-      .where(eq(businesses.id, businessId));
+      .update(messages)
+      .set({ status: 'enviada', waMessageId: sent.id, sentAt: now })
+      .where(eq(messages.id, row.id));
+    await getDb().update(businesses).set({ lastOutboundAt: now }).where(eq(businesses.id, businessId));
     return { ok: true, message: 'Mensagem enviada. A IA ficou pausada nesta conversa.' };
   } catch (error) {
+    await getDb().update(messages).set({ status: 'erro', error: errorMessage(error) }).where(eq(messages.id, row.id));
     return { ok: false, message: `Não consegui enviar: ${errorMessage(error)}` };
   }
 }
