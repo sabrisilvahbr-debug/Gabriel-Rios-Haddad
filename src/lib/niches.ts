@@ -34,6 +34,8 @@ export type ServiceIconName =
 export interface NicheTheme {
   label: string;
   font: ThemeFont;
+  /** 'toldo' = faixa listrada de fachada no topo; 'faixa' = linha de cor simples. */
+  sign: 'toldo' | 'faixa';
   colors: { primary: string; primaryDark: string; accent: string; soft: string };
   tagline: string;
   /** Complemento do texto "sobre": "A {empresa} atende {cidade} com …" */
@@ -47,7 +49,8 @@ export const NICHE_THEMES: Record<Niche, NicheTheme> = {
   alimentacao: {
     label: 'Alimentação',
     font: 'poppins',
-    colors: { primary: '#c2410c', primaryDark: '#7c2d12', accent: '#f59e0b', soft: '#fff7ed' },
+    sign: 'toldo',
+    colors: { primary: '#b42318', primaryDark: '#7a1a12', accent: '#f2b705', soft: '#fff6ed' },
     tagline: 'Sabor de verdade, feito com carinho',
     aboutPhrase: 'sabor, qualidade e um atendimento que faz você querer voltar',
     defaultServices: [
@@ -61,6 +64,7 @@ export const NICHE_THEMES: Record<Niche, NicheTheme> = {
   beleza: {
     label: 'Beleza',
     font: 'playfair',
+    sign: 'faixa',
     colors: { primary: '#9d174d', primaryDark: '#500724', accent: '#d4a373', soft: '#fdf2f8' },
     tagline: 'Cuidado e estilo para você',
     aboutPhrase: 'cuidado, técnica e atenção a cada detalhe do seu visual',
@@ -75,6 +79,7 @@ export const NICHE_THEMES: Record<Niche, NicheTheme> = {
   saude: {
     label: 'Saúde',
     font: 'inter',
+    sign: 'faixa',
     colors: { primary: '#0e7490', primaryDark: '#164e63', accent: '#22c55e', soft: '#ecfeff' },
     tagline: 'Cuidado com você em cada atendimento',
     aboutPhrase: 'atenção, responsabilidade e um atendimento humanizado',
@@ -89,6 +94,7 @@ export const NICHE_THEMES: Record<Niche, NicheTheme> = {
   automotivo: {
     label: 'Automotivo',
     font: 'poppins',
+    sign: 'toldo',
     colors: { primary: '#1d4ed8', primaryDark: '#0f172a', accent: '#f59e0b', soft: '#eff6ff' },
     tagline: 'Seu veículo em boas mãos',
     aboutPhrase: 'serviço caprichado, honestidade e respeito pelo seu tempo',
@@ -103,6 +109,7 @@ export const NICHE_THEMES: Record<Niche, NicheTheme> = {
   pet: {
     label: 'Pet',
     font: 'poppins',
+    sign: 'toldo',
     colors: { primary: '#7c3aed', primaryDark: '#4c1d95', accent: '#f97316', soft: '#f5f3ff' },
     tagline: 'Carinho e cuidado para o seu pet',
     aboutPhrase: 'carinho, cuidado e muito amor pelos animais',
@@ -117,6 +124,7 @@ export const NICHE_THEMES: Record<Niche, NicheTheme> = {
   casa: {
     label: 'Casa e serviços',
     font: 'poppins',
+    sign: 'toldo',
     colors: { primary: '#15803d', primaryDark: '#14532d', accent: '#eab308', soft: '#f0fdf4' },
     tagline: 'Soluções práticas para sua casa',
     aboutPhrase: 'serviço bem feito, pontualidade e preço justo',
@@ -131,6 +139,7 @@ export const NICHE_THEMES: Record<Niche, NicheTheme> = {
   fitness: {
     label: 'Fitness',
     font: 'poppins',
+    sign: 'toldo',
     colors: { primary: '#dc2626', primaryDark: '#111827', accent: '#facc15', soft: '#fef2f2' },
     tagline: 'Treine com motivação e acompanhamento',
     aboutPhrase: 'energia, orientação e um ambiente que motiva você a evoluir',
@@ -145,6 +154,7 @@ export const NICHE_THEMES: Record<Niche, NicheTheme> = {
   varejo: {
     label: 'Loja',
     font: 'inter',
+    sign: 'toldo',
     colors: { primary: '#0f766e', primaryDark: '#134e4a', accent: '#f43f5e', soft: '#f0fdfa' },
     tagline: 'Variedade e bom atendimento perto de você',
     aboutPhrase: 'variedade, bom atendimento e preços que cabem no seu bolso',
@@ -159,6 +169,7 @@ export const NICHE_THEMES: Record<Niche, NicheTheme> = {
   geral: {
     label: 'Serviços',
     font: 'inter',
+    sign: 'faixa',
     colors: { primary: '#334155', primaryDark: '#0f172a', accent: '#0ea5e9', soft: '#f8fafc' },
     tagline: 'Atendimento de qualidade perto de você',
     aboutPhrase: 'compromisso, qualidade e atenção a cada cliente',
