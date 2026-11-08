@@ -11,6 +11,7 @@ import { parseContentForm } from '@/lib/sites/content-form';
 import { addUploadedPhoto, removePhoto, setPhotoAuthorized } from '@/lib/sites/photos';
 import { checkDomain, connectDomain, disconnectDomain, publishSite, unpublishSite } from '@/lib/sites/publish';
 import { regenerateSiteContent, updateSiteContent } from '@/lib/sites/service';
+import { registerInboundMessage, suggestReply, type Suggestion } from '@/lib/whatsapp/manual';
 import { cancelQueued, enqueueFirstContact, sendManualMessage } from '@/lib/whatsapp/outreach';
 
 const str = (data: FormData, name: string) => String(data.get(name) ?? '');
@@ -156,4 +157,20 @@ export async function toggleAiAction(_state: ActionResult, data: FormData): Prom
   await setAiPaused(str(data, 'businessId'), paused);
   refresh(data);
   return ok(paused ? 'IA pausada nesta conversa.' : 'IA retomada nesta conversa.');
+}
+
+/** Modo celular: a dona cola a mensagem que a empresa mandou no WhatsApp. */
+export async function registerReplyAction(_state: ActionResult, data: FormData): Promise<ActionResult> {
+  await requireSession();
+  const result = await registerInboundMessage(str(data, 'businessId'), str(data, 'text'), new Date());
+  refresh(data);
+  return result.ok ? ok(result.message) : fail(result.message);
+}
+
+/** Modo celular: a IA sugere a próxima resposta (quem envia é a dona). */
+export async function suggestReplyAction(businessId: string): Promise<Suggestion> {
+  await requireSession();
+  const result = await suggestReply(businessId);
+  revalidatePath(`/painel/empresas/${businessId}`);
+  return result;
 }

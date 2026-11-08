@@ -16,7 +16,7 @@ import { DEFAULT_FIRST_TEMPLATES, pickTemplate, renderTemplate, type TemplateVar
 type Result = { ok: boolean; message: string };
 export type StepResult = { result: 'sent' | 'skipped' | 'idle' | 'error'; reason: string };
 
-const NOT_CONTACTABLE = new Set(['nao_contatar', 'sem_whatsapp', 'cliente', 'descartada']);
+export const NOT_CONTACTABLE = new Set<Business['status']>(['nao_contatar', 'sem_whatsapp', 'cliente', 'descartada']);
 const ERROR_BACKOFF_MS = 15 * 60_000;
 
 async function getBusiness(id: string): Promise<Business | null> {

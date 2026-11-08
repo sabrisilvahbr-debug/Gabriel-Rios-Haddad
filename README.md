@@ -6,8 +6,12 @@ Encontra empresas da sua região que não têm site, monta uma prévia de site p
 
 1. **Busca.** Você escolhe um ramo e uma cidade (ex.: "barbearia" em "Campinas, SP"). A Apify procura no Google Maps empresas abertas e sem site, e o app fica com as que têm celular.
 2. **Prévia.** Para cada empresa encontrada, o app monta uma página com nome, endereço, horários, nota no Google, fotos e textos escritos pelo Gemini. O visual muda conforme o ramo. A prévia fica em `/s/nome-da-empresa`, com a faixa "Prévia" e fora do Google.
-3. **WhatsApp.** As empresas que você colocar na fila recebem uma mensagem com o link da prévia. O envio é lento de propósito: uma mensagem por vez, em horário comercial, com intervalo sorteado entre elas e no máximo 20 por dia (você ajusta).
-4. **Respostas.** Quando a empresa responde, a IA conversa usando a sua oferta. Se a pessoa pedir para parar, o número é bloqueado para sempre. Se houver interesse em fechar, a IA passa a conversa para você e avisa no seu WhatsApp. Se você responder pelo celular, a IA para naquela conversa.
+3. **WhatsApp.** As empresas que você colocar na fila recebem uma mensagem com o link da prévia. Há dois modos:
+   - **Celular (grátis):** a página **Enviar** mostra as mensagens do dia. Você toca em **Enviar no WhatsApp**, o WhatsApp abre com o texto pronto e você manda.
+   - **Automático:** com um servidor da Evolution API, o painel envia sozinho, uma mensagem por vez, em horário comercial, com intervalo sorteado.
+
+   Nos dois, o limite é de 20 por dia (você ajusta).
+4. **Respostas.** No modo celular, você cola a resposta da empresa na página dela e a IA sugere o que responder. No automático, a IA conversa sozinha usando a sua oferta. Se a pessoa pedir para parar, o número é bloqueado para sempre. Se houver interesse em fechar, a IA passa a conversa para você e avisa no seu WhatsApp. Se você responder pelo celular, a IA para naquela conversa.
 5. **Site oficial.** Fechou? Você liga o domínio do cliente no painel, ele aponta o DNS, o painel confere sozinho e você clica em "Publicar site". A mesma página vira o site oficial, sem a faixa de prévia.
 
 Tudo é controlado pelo painel em `/painel`, protegido por senha.
@@ -21,14 +25,15 @@ Tudo é controlado pelo painel em `/painel`, protegido por senha.
 | Vercel Blob | Fotos que você enviar | Incluído no Pro neste volume |
 | Apify | Buscar empresas no Google Maps | ~US$ 0,01 por empresa encontrada |
 | Gemini (Google AI Studio) | Textos dos sites e respostas | Centavos de dólar por mês neste volume |
-| Railway + Evolution API | Ligar o app ao seu WhatsApp | ~US$ 5 a 10/mês |
+| Railway + Evolution API | Envio automático pelo WhatsApp (opcional) | ~US$ 5 a 10/mês |
 | Domínio do cliente | Site oficial | Pago pelo cliente (ex.: Registro.br) |
 
-O plano grátis (Hobby) da Vercel não serve: ele proíbe uso comercial e só roda o agendador uma vez por dia, e o app precisa dele a cada minuto para enviar as mensagens.
+Para começar sem gastar nada, use o modo celular: Vercel Hobby, Neon Free e os planos grátis da Apify e do Gemini. O plano Hobby da Vercel é para uso não comercial e só roda o agendador uma vez por dia, por isso o envio automático pede o Vercel Pro.
 
 ## Colocar no ar
 
-Siga o passo a passo em [docs/deploy.md](docs/deploy.md).
+- **De graça, enviando pelo celular:** [docs/deploy-gratis.md](docs/deploy-gratis.md).
+- **Com envio automático (Vercel Pro e Railway):** [docs/deploy.md](docs/deploy.md).
 
 ## Cuidados com o WhatsApp
 

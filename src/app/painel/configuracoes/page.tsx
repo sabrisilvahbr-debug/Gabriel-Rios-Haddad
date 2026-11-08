@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, MinusCircle, XCircle } from 'lucide-react';
 import { ActionForm } from '@/components/painel/client';
 import { Field, inputClass, PageHeader, Section } from '@/components/painel/ui';
 import { MAX_RESULTS_LIMIT } from '@/lib/constants';
@@ -176,6 +176,8 @@ export default async function SettingsPage() {
               <li key={item.key} className="flex items-start gap-3 py-3 text-sm">
                 {item.ok ? (
                   <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" aria-label="Configurado" />
+                ) : item.optional ? (
+                  <MinusCircle className="mt-0.5 size-5 shrink-0 text-stone-400" aria-label="Opcional, desligado" />
                 ) : (
                   <XCircle className="mt-0.5 size-5 shrink-0 text-red-500" aria-label="Falta configurar" />
                 )}
@@ -183,7 +185,8 @@ export default async function SettingsPage() {
                   <p className="font-medium text-stone-800">{item.label}</p>
                   {item.missing.length ? (
                     <p className="text-stone-500">
-                      Falta: <code className="rounded bg-stone-100 px-1">{item.missing.join(', ')}</code>
+                      {item.optional ? 'Opcional. Para ligar: ' : 'Falta: '}
+                      <code className="rounded bg-stone-100 px-1">{item.missing.join(', ')}</code>
                     </p>
                   ) : null}
                 </div>

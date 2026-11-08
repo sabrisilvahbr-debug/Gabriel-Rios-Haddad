@@ -48,6 +48,17 @@ export async function hasSession(): Promise<boolean> {
   return verifySessionToken(store.get(SESSION_COOKIE)?.value);
 }
 
+/** Para rotas chamadas pelo próprio painel (ex.: navigator.sendBeacon): lê o cookie direto do pedido. */
+export async function requestHasSession(request: Request): Promise<boolean> {
+  const cookies = request.headers.get('cookie') ?? '';
+  const token = cookies
+    .split(';')
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${SESSION_COOKIE}=`))
+    ?.slice(SESSION_COOKIE.length + 1);
+  return verifySessionToken(token);
+}
+
 /** Para páginas e server actions do painel: sem sessão, vai para o login. */
 export async function requireSession(): Promise<void> {
   if (await hasSession()) return;

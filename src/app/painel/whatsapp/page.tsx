@@ -42,22 +42,39 @@ export default async function WhatsappPage() {
 
       <div className="space-y-4">
         {!integration.ok ? (
-          <Callout tone="red">
-            Falta configurar: <code>{integration.missing.join(', ')}</code>. Veja o passo a passo do Railway no README.
+          <Callout>
+            Você está no modo celular: as mensagens saem do seu próprio WhatsApp, pela página{' '}
+            <Link href="/painel/enviar" className="font-medium underline">
+              Enviar
+            </Link>
+            . Para o envio automático, é preciso um servidor da Evolution API (veja o README).
           </Callout>
         ) : null}
-        {!cron.ok ? (
+        {integration.ok && !cron.ok ? (
           <Callout>Sem CRON_SECRET, a Vercel não chama o agendador e nada sai da fila.</Callout>
         ) : null}
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <Section
-          title="Conexão"
-          description="Recomendado: use um número separado (outro chip), para não arriscar o seu WhatsApp principal."
-        >
-          <ConnectCard initialState={waState} configured={integration.ok} />
-        </Section>
+        {integration.ok ? (
+          <Section
+            title="Conexão"
+            description="Recomendado: use um número separado (outro chip), para não arriscar o seu WhatsApp principal."
+          >
+            <ConnectCard initialState={waState} configured={integration.ok} />
+          </Section>
+        ) : (
+          <Section title="Modo celular" description="Grátis e sem servidor.">
+            <ol className="list-decimal space-y-2 pl-5 text-sm text-stone-700">
+              <li>Em Empresas, coloque as prévias prontas na fila.</li>
+              <li>Em Enviar, toque em Enviar no WhatsApp: ele abre com a mensagem pronta.</li>
+              <li>Quando a empresa responder, cole a mensagem na página dela. A IA sugere a resposta.</li>
+            </ol>
+            <Link href="/painel/enviar" className="mt-4 inline-block text-sm font-medium text-emerald-800 underline">
+              Abrir Enviar
+            </Link>
+          </Section>
+        )}
 
         <Section title="Envios">
           <dl className="space-y-3 text-sm">

@@ -5,8 +5,9 @@ import { buttonClass, inputClass, PageHeader, Section, StatusBadge } from '@/com
 import { cleanHours } from '@/components/site/SiteView';
 import { getBusinessDetail } from '@/lib/businesses';
 import { BUSINESS_STATUS_LABELS, BUSINESS_STATUSES } from '@/lib/constants';
-import { appUrl } from '@/lib/env';
+import { appUrl, isConfigured } from '@/lib/env';
 import { waNumber } from '@/lib/phone';
+import { phoneDigitsOf } from '@/lib/whatsapp/manual';
 import { deleteAction, notesAction, statusAction } from './actions';
 import { Conversation } from './Conversation';
 import { DomainPanel } from './DomainPanel';
@@ -60,7 +61,12 @@ export default async function BusinessPage({ params }: Props) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-6">
-          <Conversation business={business} messages={messages} />
+          <Conversation
+            business={business}
+            messages={messages}
+            manual={!isConfigured('whatsapp')}
+            phoneDigits={phoneDigitsOf(business)}
+          />
           {site ? (
             <>
               <SiteTextsEditor site={site} businessId={business.id} />

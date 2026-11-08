@@ -14,7 +14,7 @@ import type { EvolutionEvent } from './webhook';
 
 const AUTO_REPLY_WINDOW_MS = 20_000;
 const OWN_MESSAGE_WINDOW_MS = 5 * 60_000;
-const REPLIED_FROM = new Set(['previa_pronta', 'na_fila', 'contatada']);
+export const REPLIED_FROM = new Set<Business['status']>(['previa_pronta', 'na_fila', 'contatada']);
 
 export async function findBusinessByPhoneDigits(digits: string): Promise<Business | null> {
   const [business] = await getDb()

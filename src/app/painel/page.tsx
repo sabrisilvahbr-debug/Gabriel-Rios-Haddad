@@ -2,10 +2,11 @@ import Link from 'next/link';
 import { Callout, PageHeader, Section, StatusBadge } from '@/components/painel/ui';
 import { BUSINESS_STATUSES } from '@/lib/constants';
 import { getAppState, getSettings } from '@/lib/db/settings';
-import { integrationStatus } from '@/lib/env';
+import { integrationStatus, isConfigured } from '@/lib/env';
 import { recentEvents } from '@/lib/events';
 import { countByStatus } from '@/lib/panel/stats';
 import { formatDateTimePt, saoPauloParts } from '@/lib/time';
+import { listSendQueue } from '@/lib/whatsapp/manual';
 
 const CONNECTION_LABELS: Record<string, string> = {
   open: 'Conectado',
@@ -21,7 +22,9 @@ export default async function DashboardPage() {
     getAppState(),
     recentEvents(15),
   ]);
-  const missing = integrationStatus().filter((i) => !i.ok);
+  const missing = integrationStatus().filter((i) => !i.ok && !i.optional);
+  const automatic = isConfigured('whatsapp');
+  const toSend = automatic ? 0 : (await listSendQueue(new Date())).items.length;
   const today = saoPauloParts(new Date()).day;
   const sentToday = state.sentDay === today ? state.sentCount : 0;
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -79,27 +82,46 @@ export default async function DashboardPage() {
 
         <Section title="WhatsApp">
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-stone-600">Conexão</dt>
-              <dd className="font-medium">{CONNECTION_LABELS[state.waConnectionState] ?? state.waConnectionState}</dd>
-            </div>
+            {automatic ? (
+              <div className="flex justify-between gap-4">
+                <dt className="text-stone-600">Conexão</dt>
+                <dd className="font-medium">{CONNECTION_LABELS[state.waConnectionState] ?? state.waConnectionState}</dd>
+              </div>
+            ) : (
+              <div className="flex justify-between gap-4">
+                <dt className="text-stone-600">Envio</dt>
+                <dd className="font-medium">Pelo seu celular</dd>
+              </div>
+            )}
             <div className="flex justify-between gap-4">
               <dt className="text-stone-600">Envios hoje</dt>
               <dd className="font-medium tabular-nums">
                 {sentToday} de {settings.dailyLimit}
               </dd>
             </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-stone-600">Envio automático</dt>
-              <dd className="font-medium">{settings.outreachEnabled ? 'Ligado' : 'Desligado'}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-stone-600">Respostas da IA</dt>
-              <dd className="font-medium">{settings.aiRepliesEnabled ? 'Ligadas' : 'Desligadas'}</dd>
-            </div>
+            {automatic ? (
+              <>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-stone-600">Envio automático</dt>
+                  <dd className="font-medium">{settings.outreachEnabled ? 'Ligado' : 'Desligado'}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-stone-600">Respostas da IA</dt>
+                  <dd className="font-medium">{settings.aiRepliesEnabled ? 'Ligadas' : 'Desligadas'}</dd>
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-between gap-4">
+                <dt className="text-stone-600">Prontas para enviar</dt>
+                <dd className="font-medium tabular-nums">{toSend}</dd>
+              </div>
+            )}
           </dl>
-          <Link href="/painel/whatsapp" className="mt-4 inline-block text-sm font-medium text-emerald-800 underline">
-            Abrir WhatsApp
+          <Link
+            href={automatic ? '/painel/whatsapp' : '/painel/enviar'}
+            className="mt-4 inline-block text-sm font-medium text-emerald-800 underline"
+          >
+            {automatic ? 'Abrir WhatsApp' : 'Abrir Enviar'}
           </Link>
         </Section>
       </div>

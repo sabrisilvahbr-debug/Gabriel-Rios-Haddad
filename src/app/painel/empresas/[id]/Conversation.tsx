@@ -3,6 +3,7 @@ import { inputClass, Section } from '@/components/painel/ui';
 import type { Business, Message } from '@/lib/db/schema';
 import { formatDateTimePt } from '@/lib/time';
 import { cancelQueueOneAction, enqueueOneAction, sendManualAction, toggleAiAction } from './actions';
+import { ManualReplyTools } from './ManualReplyTools';
 
 const KIND_LABELS: Record<Message['kind'], string> = {
   primeiro_contato: 'Primeira mensagem',
@@ -22,16 +23,32 @@ const STATUS_LABELS: Record<Message['status'], string> = {
   recebida: '',
 };
 
-export function Conversation({ business, messages }: { business: Business; messages: Message[] }) {
+export function Conversation({
+  business,
+  messages,
+  manual,
+  phoneDigits,
+}: {
+  business: Business;
+  messages: Message[];
+  /** Modo celular: sem servidor de WhatsApp, a dona envia pelo próprio aparelho. */
+  manual: boolean;
+  phoneDigits: string;
+}) {
   const businessId = <input type="hidden" name="businessId" value={business.id} />;
   const firstContact = messages.find((m) => m.kind === 'primeiro_contato' && (m.status === 'agendada' || m.status === 'enviada'));
   const canEnqueue = !firstContact && (business.status === 'previa_pronta' || business.status === 'nova') && business.phoneIsMobile;
+  const queued = messages.find(
+    (m) => m.direction === 'out' && m.status === 'agendada' && (m.kind === 'primeiro_contato' || m.kind === 'follow_up'),
+  );
 
   return (
     <Section
       title="Conversa no WhatsApp"
       description={
-        business.aiPaused
+        manual
+          ? 'Modo celular: você envia pelo seu WhatsApp e cola aqui o que a empresa responder.'
+          : business.aiPaused
           ? 'IA pausada nesta conversa: só você responde.'
           : `A IA responde quando ligada em Configurações (${business.aiReplyCount} resposta(s) até agora).`
       }
@@ -74,6 +91,7 @@ export function Conversation({ business, messages }: { business: Business; messa
             {businessId}
           </ActionForm>
         ) : null}
+        {manual ? null : (
         <ActionForm
           action={toggleAiAction}
           submitLabel={business.aiPaused ? 'Retomar IA nesta conversa' : 'Pausar IA nesta conversa'}
@@ -83,9 +101,19 @@ export function Conversation({ business, messages }: { business: Business; messa
           {businessId}
           <input type="hidden" name="paused" value={business.aiPaused ? 'false' : 'true'} />
         </ActionForm>
+        )}
       </div>
 
-      {business.phoneIsMobile ? (
+      {business.phoneIsMobile && manual ? (
+        <ManualReplyTools
+          key={messages.length}
+          businessId={business.id}
+          phoneDigits={phoneDigits}
+          queued={queued ? { id: queued.id, body: queued.body } : null}
+        />
+      ) : null}
+
+      {business.phoneIsMobile && !manual ? (
         <div className="mt-5 border-t border-stone-100 pt-5">
           <ActionForm action={sendManualAction} submitLabel="Enviar agora" pendingLabel="Enviando…" className="space-y-3">
             {businessId}

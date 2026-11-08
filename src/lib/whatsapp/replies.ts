@@ -20,7 +20,7 @@ const HANDOFF_REASONS: Partial<Record<ReplyIntent, string>> = {
   quer_humano: 'pediu para falar com você',
 };
 
-async function buildContext(business: Business, settings: Settings): Promise<ReplyContext> {
+export async function buildReplyContext(business: Business, settings: Settings): Promise<ReplyContext> {
   const db = getDb();
   const [site] = await db.select({ slug: sites.slug }).from(sites).where(eq(sites.businessId, business.id)).limit(1);
   const rows = await db
@@ -129,7 +129,7 @@ export async function runRepliesStep(now: Date): Promise<number> {
       continue;
     }
     try {
-      const decision = await generateReply(await buildContext(business, settings));
+      const decision = await generateReply(await buildReplyContext(business, settings));
       await sendAiMessage(business, decision.reply, now);
       sent++;
       if (decision.intent === 'sem_interesse') {

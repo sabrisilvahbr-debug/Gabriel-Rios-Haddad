@@ -13,7 +13,9 @@ import * as schema from './schema';
  */
 export type DB = NeonHttpDatabase<typeof schema>;
 
-let instance: DB | null = null;
+// Guardado em globalThis: o Next.js carrega este módulo em mais de um pacote (páginas, rotas de API)
+// no mesmo processo. Com o banco embutido (PGlite), duas instâncias no mesmo diretório se corrompem.
+const shared = globalThis as unknown as { __zbfDb?: DB };
 let testOverride: DB | null = null;
 
 export function setDbForTests(db: DB | null): void {
@@ -22,16 +24,16 @@ export function setDbForTests(db: DB | null): void {
 
 export function getDb(): DB {
   if (testOverride) return testOverride;
-  if (instance) return instance;
+  if (shared.__zbfDb) return shared.__zbfDb;
 
   const url = env('DATABASE_URL');
   if (url.startsWith('pglite:')) {
     const dir = url.slice('pglite:'.length);
     if (dir && dir !== 'memory') mkdirSync(dir, { recursive: true });
     const client = dir && dir !== 'memory' ? new PGlite(dir) : new PGlite();
-    instance = drizzlePglite(client, { schema }) as unknown as DB;
+    shared.__zbfDb = drizzlePglite(client, { schema }) as unknown as DB;
   } else {
-    instance = drizzleNeon(neon(url), { schema });
+    shared.__zbfDb = drizzleNeon(neon(url), { schema });
   }
-  return instance;
+  return shared.__zbfDb;
 }

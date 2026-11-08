@@ -36,14 +36,20 @@ export const INTEGRATIONS = [
   { key: 'login', label: 'Login do painel', vars: ['ADMIN_PASSWORD', 'SESSION_SECRET'] },
   { key: 'apify', label: 'Busca de empresas (Apify)', vars: ['APIFY_TOKEN', 'APIFY_WEBHOOK_SECRET'] },
   { key: 'gemini', label: 'Textos e respostas (Gemini)', vars: ['GEMINI_API_KEY'] },
-  { key: 'fotos', label: 'Upload de fotos (Vercel Blob)', vars: ['BLOB_READ_WRITE_TOKEN'] },
-  { key: 'dominios', label: 'Domínios dos clientes (Vercel)', vars: ['VERCEL_API_TOKEN', 'VERCEL_PROJECT_ID'] },
+  { key: 'fotos', label: 'Upload de fotos (Vercel Blob)', vars: ['BLOB_READ_WRITE_TOKEN'], optional: true },
+  {
+    key: 'dominios',
+    label: 'Domínios dos clientes (Vercel)',
+    vars: ['VERCEL_API_TOKEN', 'VERCEL_PROJECT_ID'],
+    optional: true,
+  },
   {
     key: 'whatsapp',
-    label: 'WhatsApp (Evolution API)',
+    label: 'WhatsApp automático (Evolution API)',
     vars: ['EVOLUTION_API_URL', 'EVOLUTION_API_KEY', 'WHATSAPP_WEBHOOK_SECRET'],
+    optional: true,
   },
-  { key: 'cron', label: 'Agendador de envios (cron)', vars: ['CRON_SECRET'] },
+  { key: 'cron', label: 'Agendador (lembretes e domínios)', vars: ['CRON_SECRET'], optional: true },
 ] as const;
 
 export type IntegrationKey = (typeof INTEGRATIONS)[number]['key'];
@@ -52,13 +58,16 @@ export interface IntegrationStatus {
   key: IntegrationKey;
   label: string;
   ok: boolean;
+  /** Sem ela o painel funciona; só um recurso extra fica desligado. */
+  optional: boolean;
   missing: string[];
 }
 
 export function integrationStatus(): IntegrationStatus[] {
   return INTEGRATIONS.map((group) => {
     const missing = group.vars.filter((name) => !optionalEnv(name));
-    return { key: group.key, label: group.label, ok: missing.length === 0, missing };
+    const optional = 'optional' in group && group.optional === true;
+    return { key: group.key, label: group.label, ok: missing.length === 0, optional, missing };
   });
 }
 

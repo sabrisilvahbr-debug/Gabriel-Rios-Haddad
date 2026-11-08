@@ -83,6 +83,7 @@ const NAV = [
   { href: '/painel', label: 'Início' },
   { href: '/painel/buscas', label: 'Buscas' },
   { href: '/painel/empresas', label: 'Empresas' },
+  { href: '/painel/enviar', label: 'Enviar' },
   { href: '/painel/whatsapp', label: 'WhatsApp' },
   { href: '/painel/configuracoes', label: 'Configurações' },
 ];
