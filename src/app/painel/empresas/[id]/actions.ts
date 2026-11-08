@@ -9,6 +9,7 @@ import { deleteBusiness, updateBusinessStatus, updateNotes } from '@/lib/busines
 import type { BusinessStatus, Niche } from '@/lib/constants';
 import { parseContentForm } from '@/lib/sites/content-form';
 import { addUploadedPhoto, removePhoto, setPhotoAuthorized } from '@/lib/sites/photos';
+import { checkDomain, connectDomain, disconnectDomain, publishSite, unpublishSite } from '@/lib/sites/publish';
 import { regenerateSiteContent, updateSiteContent } from '@/lib/sites/service';
 
 const str = (data: FormData, name: string) => String(data.get(name) ?? '');
@@ -88,4 +89,41 @@ export async function deleteAction(_state: ActionResult, data: FormData): Promis
   await deleteBusiness(str(data, 'businessId'));
   revalidatePath('/painel/empresas');
   redirect('/painel/empresas');
+}
+
+export async function connectDomainAction(_state: ActionResult, data: FormData): Promise<ActionResult> {
+  await requireSession();
+  const result = await connectDomain(str(data, 'siteId'), str(data, 'domain'));
+  refresh(data);
+  return result;
+}
+
+export async function checkDomainAction(_state: ActionResult, data: FormData): Promise<ActionResult> {
+  await requireSession();
+  const status = await checkDomain(str(data, 'siteId'));
+  refresh(data);
+  if (status === 'ativo') return ok('Domínio funcionando. Já dá para publicar.');
+  if (status === 'erro') return fail('Não consegui consultar a Vercel. Veja o erro abaixo.');
+  return fail('Ainda não está pronto. O DNS pode levar algumas horas para atualizar.');
+}
+
+export async function publishAction(_state: ActionResult, data: FormData): Promise<ActionResult> {
+  await requireSession();
+  const result = await publishSite(str(data, 'siteId'));
+  refresh(data);
+  return result;
+}
+
+export async function unpublishAction(_state: ActionResult, data: FormData): Promise<ActionResult> {
+  await requireSession();
+  const result = await unpublishSite(str(data, 'siteId'));
+  refresh(data);
+  return result;
+}
+
+export async function disconnectDomainAction(_state: ActionResult, data: FormData): Promise<ActionResult> {
+  await requireSession();
+  const result = await disconnectDomain(str(data, 'siteId'));
+  refresh(data);
+  return result;
 }

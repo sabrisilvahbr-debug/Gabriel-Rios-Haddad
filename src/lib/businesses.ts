@@ -1,5 +1,7 @@
 import { and, asc, desc, eq, ilike, or, type SQL } from 'drizzle-orm';
+import { errorMessage } from '@/lib/async';
 import { blockPhone } from '@/lib/blocklist';
+import { removeDomainHosts } from '@/lib/domains/vercel';
 import { BUSINESS_STATUS_LABELS, BUSINESS_STATUSES, type BusinessStatus } from '@/lib/constants';
 import { getDb } from '@/lib/db/client';
 import { businesses, messages, sites, type Business, type Message, type Site } from '@/lib/db/schema';
@@ -98,5 +100,17 @@ export async function setAiPaused(id: string, paused: boolean): Promise<void> {
 
 /** Apaga empresa, site, mensagens e histórico (as tabelas filhas caem em cascata). */
 export async function deleteBusiness(id: string): Promise<void> {
+  const [site] = await getDb()
+    .select({ customDomain: sites.customDomain })
+    .from(sites)
+    .where(eq(sites.businessId, id))
+    .limit(1);
+  if (site?.customDomain) {
+    try {
+      await removeDomainHosts(site.customDomain);
+    } catch (error) {
+      console.warn('[businesses] não consegui remover o domínio na Vercel:', errorMessage(error));
+    }
+  }
   await getDb().delete(businesses).where(eq(businesses.id, id));
 }

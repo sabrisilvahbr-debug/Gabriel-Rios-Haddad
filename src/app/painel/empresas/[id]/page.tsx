@@ -8,6 +8,7 @@ import { BUSINESS_STATUS_LABELS, BUSINESS_STATUSES } from '@/lib/constants';
 import { appUrl } from '@/lib/env';
 import { waNumber } from '@/lib/phone';
 import { deleteAction, notesAction, statusAction } from './actions';
+import { DomainPanel } from './DomainPanel';
 import { SitePhotosEditor, SiteTextsEditor } from './SiteEditor';
 
 type Props = { params: Promise<{ id: string }> };
@@ -62,6 +63,7 @@ export default async function BusinessPage({ params }: Props) {
             <>
               <SiteTextsEditor site={site} businessId={business.id} />
               <SitePhotosEditor site={site} businessId={business.id} />
+              <DomainPanel site={site} businessId={business.id} />
             </>
           ) : (
             <Section title="Site">
