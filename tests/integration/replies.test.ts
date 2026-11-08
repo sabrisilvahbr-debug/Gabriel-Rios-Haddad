@@ -42,6 +42,7 @@ beforeEach(async () => {
         if (decision === 'erro') return json({ error: 'quota' }, 429);
         return json({ candidates: [{ content: { parts: [{ text: JSON.stringify(decision) }] } }] });
       }
+      if (url.includes('/instance/connectionState/')) return json({ instance: { state: 'open' } });
       if (url.includes('/message/sendText/')) {
         const body = JSON.parse(String(init.body));
         sends.push({ number: body.number, text: body.text });

@@ -13,6 +13,8 @@ let db: DB;
 let sends: Array<{ number: string; text: string }>;
 let exists: boolean;
 let sendFails: boolean;
+let connState: string;
+let stateChecks: number;
 
 const MONDAY_10H = new Date('2026-11-09T13:00:00Z'); // segunda, 10:00 em Brasília
 const SUNDAY_10H = new Date('2026-11-08T13:00:00Z');
@@ -26,6 +28,8 @@ beforeEach(async () => {
   sends = [];
   exists = true;
   sendFails = false;
+  connState = 'open';
+  stateChecks = 0;
   vi.stubEnv('APP_URL', 'https://zap.vercel.app');
   vi.stubEnv('EVOLUTION_API_URL', 'https://evo.example/');
   vi.stubEnv('EVOLUTION_API_KEY', 'evo-key');
@@ -38,6 +42,10 @@ beforeEach(async () => {
     vi.fn(async (url: string, init: RequestInit = {}) => {
       expect((init.headers as Record<string, string>).apikey).toBe('evo-key');
       const body = init.body ? JSON.parse(String(init.body)) : {};
+      if (url === 'https://evo.example/instance/connectionState/zapflow') {
+        stateChecks++;
+        return json({ instance: { instanceName: 'zapflow', state: connState } });
+      }
       if (url === 'https://evo.example/chat/whatsappNumbers/zapflow') {
         return json([{ exists, jid: `${body.numbers[0]}@s.whatsapp.net`, number: body.numbers[0] }]);
       }
@@ -189,6 +197,14 @@ describe('runTick', () => {
     expect(reports.filter((r) => r.locked)).toHaveLength(1);
     expect(sends).toHaveLength(1);
     expect((await getAppState()).tickLockedUntil).toBeNull();
+  });
+
+  it('checks the WhatsApp connection on every tick, which also keeps a sleeping WhatsApp server awake', async () => {
+    connState = 'close';
+    const report = await runTick(SUNDAY_10H);
+    expect(stateChecks).toBe(1);
+    expect(report.errors).toEqual([]);
+    expect((await getAppState()).waConnectionState).toBe('close');
   });
 
   it('the cron route requires the secret', async () => {

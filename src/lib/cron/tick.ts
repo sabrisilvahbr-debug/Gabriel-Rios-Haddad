@@ -5,6 +5,7 @@ import { appState } from '@/lib/db/schema';
 import { getAppState, updateAppState } from '@/lib/db/settings';
 import { isConfigured } from '@/lib/env';
 import { checkPendingDomains } from '@/lib/sites/publish';
+import { syncConnectionState } from '@/lib/whatsapp/connection';
 import { runOutreachStep, scheduleFollowUps, type StepResult } from '@/lib/whatsapp/outreach';
 import { runRepliesStep } from '@/lib/whatsapp/replies';
 
@@ -43,6 +44,9 @@ export async function runTick(now: Date = new Date()): Promise<TickReport> {
   };
 
   try {
+    await step('whatsapp', async () => {
+      if (isConfigured('whatsapp')) await syncConnectionState();
+    });
     await step('lembretes', async () => {
       report.followUps = await scheduleFollowUps(now);
     });

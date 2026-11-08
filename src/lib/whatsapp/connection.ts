@@ -2,7 +2,15 @@ import { errorMessage } from '@/lib/async';
 import { getAppState, updateAppState } from '@/lib/db/settings';
 import { isConfigured } from '@/lib/env';
 import { logEvent } from '@/lib/events';
-import { connect, connectionState, createInstance, logout, setWebhook, type ConnectionState } from './evolution';
+import {
+  connect,
+  connectionState,
+  createInstance,
+  EvolutionError,
+  logout,
+  setWebhook,
+  type ConnectionState,
+} from './evolution';
 
 const QR_MAX_AGE_MS = 25_000;
 
@@ -52,4 +60,30 @@ export async function disconnectWhatsapp(): Promise<void> {
   await logout();
   await updateAppState({ waConnectionState: 'close', waLastQr: null });
   await logEvent('whatsapp', 'WhatsApp desconectado pelo painel.');
+}
+
+/**
+ * Pergunta à Evolution API como está a conexão e guarda no painel. Roda a cada rodada do agendador:
+ * no plano grátis do Render, essa visita também impede o servidor do WhatsApp de dormir.
+ */
+export async function syncConnectionState(): Promise<ConnectionState> {
+  let state: ConnectionState;
+  try {
+    state = await connectionState();
+  } catch (error) {
+    if (!(error instanceof EvolutionError && error.status === 404)) {
+      // Servidor fora do ar ou acordando: nada é enviado até ele responder de novo.
+      await updateAppState({ waConnectionState: 'unknown' });
+      throw error;
+    }
+    state = 'close'; // a instância ainda não foi criada (ou foi apagada)
+  }
+  const app = await getAppState();
+  if (app.waConnectionState !== state) {
+    await updateAppState({ waConnectionState: state, ...(state === 'open' ? { waLastQr: null } : {}) });
+    if (app.waConnectionState === 'open' && state === 'close') {
+      await logEvent('whatsapp', 'O WhatsApp desconectou. Conecte de novo na página WhatsApp.');
+    }
+  }
+  return state;
 }

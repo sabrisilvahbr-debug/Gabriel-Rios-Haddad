@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createTestDb } from '../helpers/db';
 import { getAppState, updateAppState } from '@/lib/db/settings';
-import { disconnectWhatsapp, refreshConnection, startConnection } from '@/lib/whatsapp/connection';
+import { disconnectWhatsapp, refreshConnection, startConnection, syncConnectionState } from '@/lib/whatsapp/connection';
 
 let calls: Array<{ method: string; url: string; body: Record<string, unknown> | null }>;
 let state: string;
 let qrCounter: number;
+let missing: boolean;
+let down: boolean;
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -16,6 +18,8 @@ beforeEach(async () => {
   calls = [];
   state = 'close';
   qrCounter = 0;
+  missing = false;
+  down = false;
   vi.stubEnv('APP_URL', 'https://zap.vercel.app');
   vi.stubEnv('EVOLUTION_API_URL', 'https://evo.example');
   vi.stubEnv('EVOLUTION_API_KEY', 'evo-key');
@@ -28,7 +32,11 @@ beforeEach(async () => {
       calls.push({ method, url, body: init.body ? JSON.parse(String(init.body)) : null });
       if (url.endsWith('/instance/create')) return json({ response: { message: ['already in use'] } }, 403);
       if (url.includes('/webhook/set/')) return json({ ok: true });
-      if (url.includes('/instance/connectionState/')) return json({ instance: { instanceName: 'zapflow', state } });
+      if (url.includes('/instance/connectionState/')) {
+        if (down) throw new TypeError('fetch failed');
+        if (missing) return json({ status: 404, error: 'Not Found' }, 404);
+        return json({ instance: { instanceName: 'zapflow', state } });
+      }
       if (url.includes('/instance/connect/')) return json({ base64: `data:image/png;base64,QR${++qrCounter}`, code: 'x' });
       if (url.includes('/instance/logout/')) return json({ status: 'SUCCESS' });
       return json({}, 404);
@@ -90,6 +98,30 @@ describe('disconnectWhatsapp', () => {
     await updateAppState({ waConnectionState: 'open' });
     await disconnectWhatsapp();
     expect(calls.some((c) => c.method === 'DELETE' && c.url.endsWith('/instance/logout/zapflow'))).toBe(true);
+    expect((await getAppState()).waConnectionState).toBe('close');
+  });
+});
+
+describe('syncConnectionState', () => {
+  it('asks the WhatsApp server for the connection state and stores it', async () => {
+    await updateAppState({ waConnectionState: 'open' });
+    state = 'close';
+    expect(await syncConnectionState()).toBe('close');
+    expect((await getAppState()).waConnectionState).toBe('close');
+    expect(calls.some((c) => c.url.includes('/instance/connectionState/'))).toBe(true);
+  });
+
+  it("marks the connection as unknown when the WhatsApp server doesn't answer, so nothing is sent until it does", async () => {
+    await updateAppState({ waConnectionState: 'open' });
+    down = true;
+    await expect(syncConnectionState()).rejects.toThrow();
+    expect((await getAppState()).waConnectionState).toBe('unknown');
+  });
+
+  it('treats a missing WhatsApp instance as disconnected', async () => {
+    await updateAppState({ waConnectionState: 'open' });
+    missing = true;
+    expect(await syncConnectionState()).toBe('close');
     expect((await getAppState()).waConnectionState).toBe('close');
   });
 });
