@@ -1,0 +1,67 @@
+[
+  {
+    "placeId": "p1",
+    "title": "Barbearia do Zé",
+    "categoryName": "Barbearia",
+    "categories": ["Barbearia"],
+    "address": "Rua Barão de Jaguara, 100 - Centro, Campinas - SP, 13015-000",
+    "neighborhood": "Centro",
+    "city": "Campinas",
+    "state": "São Paulo",
+    "website": null,
+    "phone": "(19) 98765-4321",
+    "phoneUnformatted": "+5519987654321",
+    "totalScore": 4.8,
+    "reviewsCount": 120,
+    "url": "https://www.google.com/maps/place/?q=place_id:p1",
+    "imageUrl": "https://lh5.googleusercontent.com/p/foto1",
+    "imageUrls": ["https://lh5.googleusercontent.com/p/foto1", "https://lh5.googleusercontent.com/p/foto2", 42],
+    "openingHours": [
+      { "day": "segunda-feira", "hours": "09:00 to 19:00" },
+      { "day": "domingo", "hours": "Fechado" }
+    ],
+    "permanentlyClosed": false,
+    "temporarilyClosed": false
+  },
+  {
+    "placeId": "p2",
+    "title": "Barbearia do Zé",
+    "categoryName": "Barbearia",
+    "city": "Campinas",
+    "state": "São Paulo",
+    "phone": null,
+    "phoneUnformatted": "+5519991112222",
+    "totalScore": 4.1,
+    "reviewsCount": 9
+  },
+  {
+    "placeId": "p3",
+    "title": "Pizzaria Bella",
+    "categoryName": "Pizzaria",
+    "city": "Campinas",
+    "website": "https://bella.com.br",
+    "phone": "(19) 99999-0000"
+  },
+  {
+    "placeId": "p4",
+    "title": "Salão Rosa",
+    "categoryName": "Salão de beleza",
+    "city": "Campinas",
+    "phone": "(19) 98888-1111",
+    "permanentlyClosed": true
+  },
+  {
+    "placeId": "p5",
+    "title": "Oficina Boa",
+    "categoryName": "Oficina mecânica",
+    "city": "Campinas",
+    "phone": "(19) 3232-4545"
+  },
+  {
+    "placeId": "p6",
+    "title": "Padaria Pão Quente",
+    "categoryName": "Padaria",
+    "city": "Campinas",
+    "phone": "(19) 97777-8888"
+  }
+]
